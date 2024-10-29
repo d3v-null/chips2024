@@ -31,7 +31,7 @@
 #include <fitsio.h>
 #include <float.h>
 #include <assert.h>
-#include "slalib.h"
+#include <star/pal.h>
 #include "uvfits.h"
 
 #define MAX_CSIZE 8
@@ -1235,7 +1235,7 @@ int writeAntennaData(fitsfile *fptr, uvdata *data) {
 
     /* GSTIAO is the GST at zero hours in the time system of TIMSYS (i.e. UTC) */
     mjd = trunc(data->date[0] - 2400000.5);
-    temp = slaGmst(mjd)*180.0/M_PI;  // technically, slaGmst takes UT1, but it won't matter here.
+    temp = palGmst(mjd)*180.0/M_PI;  // technically, palGmst takes UT1, but it won't matter here.
     if (debug) {
       fprintf(stdout,"GMST is: %g degs\n",temp);
     }
@@ -1259,7 +1259,7 @@ int writeAntennaData(fitsfile *fptr, uvdata *data) {
     fits_update_key(fptr,TINT,"NOPCAL",&itemp , NULL, &status);
     itemp = -1;
     fits_update_key(fptr,TINT,"FREQID",&itemp, NULL, &status);
-    temp= slaDat(mjd);
+    temp= palDat(mjd);
     fits_update_key(fptr,TDOUBLE,"IATUTC",&temp , NULL, &status);
     if (status) {
         fits_report_error(stderr,status);

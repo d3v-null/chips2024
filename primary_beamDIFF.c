@@ -11,7 +11,7 @@
 #include <fitsio.h>
 #include <float.h>
 #include <assert.h>
-#include "slalib.h"
+#include <star/pal.h>
 #include "uvfits.h"
 #include "assert.h"
 #include "primary_beam.h"
@@ -41,7 +41,7 @@ static int debug=0;
 /******************************
  ! NAME:		calc_bv_flags
  ! PURPOSE:		compute the bdag_b and bdag_v output files for each freq, pol and w-stack. centres beam on uv-cell. Small w-stacks
- ! ARGUMENTS:	
+ ! ARGUMENTS:
  ! RETURNS:		integer (0=success)
 ******************************/
 
@@ -61,9 +61,9 @@ double distance=0.,*beam_real=NULL,*beam_imag=NULL,*u_lex_small=NULL,*v_lex_smal
 
 //    printf("internal flag14m %d %d %d %d\n",flag14m[0],flag14m[10],flag14m[4567],flag14m[8127]);
 
-    
+
     srand48((long)time(NULL));
-    
+
 if (debug){
 /* Open log file */
 sprintf(debugfile,"%ssysdebug.txt",getenv("OUTPUTDIR"));
@@ -76,12 +76,12 @@ if ((flog=fopen(debugfile,"a")) == NULL){
 float intrinsic_res = 1./6.;
 norm = 1./(DELTA_U*DELTA_U/intrinsic_res/intrinsic_res);
 printf("Beam normalization: %g\n",norm);
- 
+
 visnoise = 1.;
 //norm2=1.;
-    
+
 /* define frequency at low end of coarse channel */
-    
+
     frequency_lower = freq_index*COARSE_CHAN_WIDTH + LOWER_FREQ;
     factor_scale = frequency/frequency_lower;
 //    factor_scale = 1.;
@@ -96,22 +96,22 @@ visnoise = 1.;
 	flag_array = calloc(size_fin,sizeof(double));
 
 
-    
+
     l8 = global_period/86400.*2.*M_PI;     // extra rotation for second step
  //   l8 = 0.;
-    
+
 	// set weights to zero for 14m east-west baselines
-    
+
  //   printf("internal flag14m %d %d %d %d\n",flag14m[0],flag14m[10],flag14m[4567],flag14m[8127]);
-    
+
 //	int ws = 10 - wstack;
 //	wstack = ws;
 
 for (wstack=0;wstack<NUM_W_STACK;wstack++){
 //  for (wstack=0;wstack<1;wstack++){
-    
+
 	w_centre = (wstack*DELTA_WSTACK);
-    
+
 //	printf("wstack %d w_centre %lg\n",wstack,w_centre);
 
    /*****************************************************************/
@@ -121,16 +121,16 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 
 	for (i=0;i<data->n_baselines[0];i++){
      //    printf("baseline: %d\n",i);
-				
+
      /* Compute whether uv point lies within range of uv-grid and wstack */
 
 		distance = sqrt(data->u[0][i]*data->u[0][i]+data->v[0][i]*data->v[0][i])*(frequency);
 	//	if (debug) fprintf(flog,"i %d distance: %lg w: %g, weight %g, WMAX %f, wcentre %f\n",i,distance,data->w[0][i]*frequency,data->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)],WMAX,w_centre);
-        
 
- 
+
+
  		if ((distance >= UMAX-SIZE_BEAM/2*INTRINSIC_DELTA_U) || (distance < 0.5) || (sqrt(data->w[0][i]*frequency*data->w[0][i]*frequency) >= WMAX) || ((sqrt((sqrt(data->w[0][i]*data->w[0][i])*frequency-w_centre)*(sqrt(data->w[0][i]*data->w[0][i])*frequency-w_centre))) > WSTACK_DELT_TOT/2.) || (data->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] <= 0.) || (flag14m[i] == 0)){
-            
+
 
 		} else {
 
@@ -150,11 +150,11 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 
 	/* set-up beam to contain enough entries to comfortably contain beam
 			  region */
-	
+
 //	beam_size = (int) BEAM_SIZE_FLOAT*(1.+w_centre/10.);
     beam_size = (int) BEAM_SIZE_FLOAT;
  //   printf("beam size %d\n",beam_size);
-		
+
 	if (((float)beam_size)/2. == (int)((float)(beam_size)/2.)) beam_size = beam_size+1;  /* make odd */
 
 	kernel_size_float = beam_size*beam_size;
@@ -170,7 +170,7 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 
 	for (i=0;i<data->n_baselines[0];i++){
      //    printf("baseline: %d\n",i);
-				
+
  //       if (data->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] > 64.) printf("weight large!\n");
 
 		if (include_vis[i] != 1){
@@ -189,13 +189,13 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 			uu = -uu;
 			vv = -vv;
 			ww = -ww;
-			} 
+			}
 
 			/* remove points in -ve v for u=0 */
 			if ((HALF_PLANE_FLAG)&&(round(uu/DELTA_U) == 0)&&(vv < 0.)){
 			flag = 1;
 			vv = -vv;
-			} 
+			}
 
     			if (debug) fprintf(flog,"u %g v %g w %g\n",uu,vv,ww);
 
@@ -209,20 +209,20 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
     			   /* lexicographic u and v co-ordinates of small *sky* Fourier plane around the Fourier location */
 			for (k=0;k<beam_size;k++){
 				for (j=0;j<beam_size;j++){
-								 
+
 					u_lex_small[loc] = (double) ((k)-(int) beam_size/2)*DELTA_U + round(uu/DELTA_U)*DELTA_U;
 					v_lex_small[loc] = (double) ((j)-(int) beam_size/2)*DELTA_U + round(vv/DELTA_U)*DELTA_U;
 					if (debug) printf("loc %ld u_lex %g v_lex %g\n",loc,u_lex_small[loc],v_lex_small[loc]);
 					loc++;
 				}
 			}
-								   
+
 			beam_real = calloc(kernel_size,sizeof(double));
 			beam_imag = calloc(kernel_size,sizeof(double));
-   
+
 			beamsq_real = calloc(kernel_size,sizeof(double));
 			beamsq_imag = calloc(kernel_size,sizeof(double));
-            
+
             beamsq_real2 = calloc(kernel_size,sizeof(double));
             beamsq_imag2 = calloc(kernel_size,sizeof(double));
 
@@ -234,53 +234,53 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
             total_norm_sq = beam_data->total_norm_sq[wstack][point];
 //		total_norm_sq = 1.;
             normal = (beam_data->total_norm_sq[wstack][point]);   ///sqrt(factor_scale);
-            
-            
+
+
 			// Rotate beam to phase centre
 			for (k=0;k<kernel_size;k++){
 
                 float rotat1 = -(2.*M_PI*(u_lex_small[k]-uu)*sin(modd(l_rot)));
                 float rotat2 = -(2.*M_PI*(v_lex_small[k]-vv)*sin(modd(m_rot)));
-                
+
                 float rotat3 = -(2.*M_PI*(u_lex_small[k]-uu)*sin(modd(l_rot-l8)));
 
-                
+
                 //				printf("Rotation to beam centre (rad): %g\n",rotat);
                 float temp1 = beamsq_real[k]*cos(rotat1) + beamsq_imag[k]*sin(rotat1);
                 float temp2 = beamsq_imag[k]*cos(rotat1) - beamsq_real[k]*sin(rotat1);
 
-                
+
                 float temp3 = beamsq_real[k]*cos(rotat3) + beamsq_imag[k]*sin(rotat3);
                 float temp4 = beamsq_imag[k]*cos(rotat3) - beamsq_real[k]*sin(rotat3);
 
-                
+
                 // testing rotation direction
                 //				float temp1 = beam_real[k]*cos(rotat) - beam_imag[k]*sin(rotat);
                 //				float temp2 = beam_imag[k]*cos(rotat) + beam_real[k]*sin(rotat);
-                
+
                 beamsq_real[k] = temp1;
                 beamsq_imag[k] = temp2;
-                
+
                 beamsq_real2[k] = temp3;
                 beamsq_imag2[k] = temp4;
-                
 
-                
-                
+
+
+
                 float temp11 = beamsq_real[k]*cos(rotat2) + beamsq_imag[k]*sin(rotat2);
                 float temp22 = beamsq_imag[k]*cos(rotat2) - beamsq_real[k]*sin(rotat2);
- 
+
                 float temp33 = beamsq_real2[k]*cos(rotat2) + beamsq_imag2[k]*sin(rotat2);
                 float temp44 = beamsq_imag2[k]*cos(rotat2) - beamsq_real2[k]*sin(rotat2);
 
-                
+
                 // testing rotation direction
                 //				float temp1 = beam_real[k]*cos(rotat) - beam_imag[k]*sin(rotat);
                 //				float temp2 = beam_imag[k]*cos(rotat) + beam_real[k]*sin(rotat);
-                
+
                 beamsq_real[k] = temp11;
                 beamsq_imag[k] = temp22;
-                
+
 
                 beamsq_real2[k] = temp33;
                 beamsq_imag2[k] = temp44;
@@ -288,29 +288,36 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 
       //   			  printf("k %d beamr %g beam i %g\n",k,beam_real[k],beam_imag[k]);
 			}
-	
+
 			/* visibility data from uvfits input file -- cc if in -ve u plane
 			factor of pol is to jump to the YY pol after the XX */
 /*			vis_r = data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)];
 			if (flag == 0){ vis_i = data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)+1]; } else { vis_i = -data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)+1];}
- 
+
 */
-            
-            
+
+
         /* ONLY GRID THESE POINTS IF THE WEIGHTS MATCH */
-            
+
  //       if ((data->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] == data2->weightdata[0][(i*(data2->n_pol*data2->n_freq) + ch*data2->n_pol + pol)])&&(data->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] == 8.)) {
-            
+
             if ((data->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] == data2->weightdata[0][(i*(data2->n_pol*data2->n_freq) + ch*data2->n_pol + pol)])&&(data->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] > 0.)){
-           
- 
-            
+
+ /*
+			vis_rtot = (data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] + data2->visdata[0][2*(i*(data2->n_pol*data2->n_freq) + ch*data2->n_pol + pol)]);
+			if (flag == 0){ vis_itot = (data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)+1] + data2->visdata[0][2*(i*(data2->n_pol*data2->n_freq) + ch*data2->n_pol + pol)+1]); } else { vis_itot = (-data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)+1]-data2->visdata[0][2*(i*(data2->n_pol*data2->n_freq) + ch*data2->n_pol + pol)+1]);}
+
+            vis_rdiff = (data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] - data2->visdata[0][2*(i*(data2->n_pol*data2->n_freq) + ch*data2->n_pol + pol)]);
+            if (flag == 0){ vis_idiff = (data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)+1] - data2->visdata[0][2*(i*(data2->n_pol*data2->n_freq) + ch*data2->n_pol + pol)+1]); } else { vis_idiff = (-data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)+1] + data2->visdata[0][2*(i*(data2->n_pol*data2->n_freq) + ch*data2->n_pol + pol)+1]);}
+ */
+
+
             vis_r1 = data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)];
             vis_r2 = data2->visdata[0][2*(i*(data2->n_pol*data2->n_freq) + ch*data2->n_pol + pol)];
             vis_i1 = data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)+1];
             vis_i2 = data2->visdata[0][2*(i*(data2->n_pol*data2->n_freq) + ch*data2->n_pol + pol)+1];
-  
- 
+
+
 /************************* TESTING ***********************/
 
 //vis_r=1.;
@@ -335,7 +342,7 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 	//                weight = 1.;
 //                printf("Weight: %f\n",weight);
 
-            
+
 //            printf("pol %d abs vis %f\n",pol,vis_r*vis_r+vis_i*vis_i);
 
             if ((debug)&&(weight != 0.0)) fprintf(flog,"chan_width %f period %f ch %d pol %d weight %f vis_r %f beam %f loc %d\n",global_chanwidth,global_period,ch,pol,weight,creal(vis_itot),(beamsq_real[10]),xx);
@@ -345,7 +352,7 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 		       /* update bdag_b matrix and bdag_v vector according to the footprint of this baseline */
 
                 additup=0.;
-                
+
 			for (j=0;j<kernel_size;j++){
 
 				flag2 = 0;
@@ -354,9 +361,9 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 
 				double u_loc1 = u_lex_small[j] -round(uu/DELTA_U)*DELTA_U + (uu);
 				double v_loc1 = v_lex_small[j] -round(vv/DELTA_U)*DELTA_U + (vv);
-				
+
 //      			exit(1);
-         
+
 				/* determine index values for u location u_loc1 etc on THE FULL/HALF UV-PLANE */
 
 				if (HALF_PLANE_FLAG) { ii = round(u_loc1/DELTA_U);} else { ii = round(u_loc1/DELTA_U) + u_size-1; }
@@ -367,17 +374,17 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 					ii = -ii;
 					jj = 2*u_size - jj;
 					flag2 = 1;
-				} 
-         
-                
-                
+				}
+
+
+
                     		/* If location is within FULL uv-plane */
                     		if (HALF_PLANE_FLAG){ top = u_size; } else {top = 2.*u_size;}
 				if ((ii >= 0)&&(ii <= top-1)&&(jj >= 0)&&(jj <= 2*u_size-1)){
 
 					xx = round((ii)*2.*u_size + jj); /* lexicographic location */
 
-						
+
 					/* MEASURED VISIBILITY DATA CALC */
 
 //					if (debug){
@@ -391,109 +398,109 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 					bdag_v_real[xx] += (beam_real[j]*vis_r + beam_imag[j]*vis_i)/normal/norm*weight*weight - I*(beam_real[j]*vis_i - beam_imag[j]*vis_r)/normal/norm*weight*weight;
 					}
 */
-                    
+
                     /*
-                    
+
                     // TOT
                     if (flag2 == 0){
                         bdag_v_real[xx] += (beamsq_real[j]*vis_r1 + beamsq_real2[j]*vis_r2 + beamsq_imag[j]*(-vis_i1)+beamsq_imag2[j]*(-vis_i2))/(total_norm_sq)*weight*weight + I*(beamsq_real[j]*(-vis_i1)+beamsq_real2[j]*(-vis_i2) - (beamsq_imag[j]*vis_r1 + beamsq_imag2[j]*vis_r2))/(total_norm_sq)*weight*weight;
                     } else {
                         bdag_v_real[xx] += (beamsq_real[j]*vis_r1 + beamsq_real2[j]*vis_r2 + beamsq_imag[j]*(-vis_i1)+beamsq_imag2[j]*(-vis_i2))/(total_norm_sq)*weight*weight - I*(beamsq_real[j]*(-vis_i1)+beamsq_real2[j]*(-vis_i2) - (beamsq_imag[j]*vis_r1 + beamsq_imag2[j]*vis_r2))/(total_norm_sq)*weight*weight;
                     }
-                    
-                    
+
+
                     //  DIFF
                     if (flag2 == 0){
                         bdag_v_realdiff[xx] += (beamsq_real[j]*vis_r1 - beamsq_real2[j]*vis_r2 + beamsq_imag[j]*(-vis_i1)-beamsq_imag2[j]*(vis_i2))/(total_norm_sq)*weight*weight + I*(beamsq_real[j]*(-vis_i1)+beamsq_real2[j]*(vis_i2) - (beamsq_imag[j]*vis_r1 - beamsq_imag2[j]*vis_r2))/(total_norm_sq)*weight*weight;
                     } else {
                         bdag_v_realdiff[xx] += (beamsq_real[j]*vis_r1 - beamsq_real2[j]*vis_r2 + beamsq_imag[j]*(-vis_i1)-beamsq_imag2[j]*(vis_i2))/(total_norm_sq)*weight*weight - I*(beamsq_real[j]*(-vis_i1)+beamsq_real2[j]*(vis_i2) - (beamsq_imag[j]*vis_r1 - beamsq_imag2[j]*vis_r2))/(total_norm_sq)*weight*weight;
                     }
-                    
+
 
                     if (flag == 0){
-                        
-                        
+
+
                         if (flag2 == 0){
                             bdag_v_real[xx] += (beamsq_real[j]*vis_r1 + beamsq_real2[j]*vis_r2 + beamsq_imag[j]*(vis_i1)+beamsq_imag2[j]*(vis_i2))/(total_norm_sq)*weight*weight + I*(beamsq_real[j]*(vis_i1)+beamsq_real2[j]*(vis_i2) - (beamsq_imag[j]*vis_r1 + beamsq_imag2[j]*vis_r2))/(total_norm_sq)*weight*weight;
                         } else {
                             bdag_v_real[xx] += (beamsq_real[j]*vis_r1 + beamsq_real2[j]*vis_r2 + beamsq_imag[j]*(vis_i1)+beamsq_imag2[j]*(vis_i2))/(total_norm_sq)*weight*weight - I*(beamsq_real[j]*(vis_i1)+beamsq_real2[j]*(vis_i2) - (beamsq_imag[j]*vis_r1 + beamsq_imag2[j]*vis_r2))/(total_norm_sq)*weight*weight;
                         }
-                        
-                        
-                        
+
+
+
                         if (flag2 == 0){
                             bdag_v_realdiff[xx] += (beamsq_real[j]*vis_r1 - beamsq_real2[j]*vis_r2 + beamsq_imag[j]*(vis_i1)-beamsq_imag2[j]*(-vis_i2))/(total_norm_sq)*weight*weight + I*(beamsq_real[j]*(vis_i1)+beamsq_real2[j]*(-vis_i2) - (beamsq_imag[j]*vis_r1 - beamsq_imag2[j]*vis_r2))/(total_norm_sq)*weight*weight;
                         } else {
                             bdag_v_realdiff[xx] += (beamsq_real[j]*vis_r1 - beamsq_real2[j]*vis_r2 + beamsq_imag[j]*(vis_i1)-beamsq_imag2[j]*(-vis_i2))/(total_norm_sq)*weight*weight - I*(beamsq_real[j]*(vis_i1)+beamsq_real2[j]*(-vis_i2) - (beamsq_imag[j]*vis_r1 - beamsq_imag2[j]*vis_r2))/(total_norm_sq)*weight*weight;
                         }
 
-                        
-                        
-                        
+
+
+
                     }
                     */
-                    
+
                     if ((flag == 0)&&(flag2 == 0)){
-                        
-                        
+
+
                         bdag_v_real[xx] += (vis_r1*beamsq_real2[j] + vis_r2*beamsq_real[j] - vis_i1*beamsq_imag2[j] - vis_i2*beamsq_imag[j] )/normal/norm*weight*weight +I*( vis_r1*beamsq_imag2[j] + vis_i1*beamsq_real2[j] + vis_r2*beamsq_imag[j] + vis_i2*beamsq_real[j] )/normal/norm*weight*weight;
-                        
+
                         bdag_v_realdiff[xx] += ( vis_r1*beamsq_real2[j] + vis_i2*beamsq_imag[j] - vis_i1*beamsq_imag2[j] - vis_r2*beamsq_real[j] )/normal/norm*weight*weight +I*( vis_r1*beamsq_imag2[j] + vis_i1*beamsq_real2[j] - vis_r2*beamsq_imag[j] - vis_i2*beamsq_real[j] )/normal/norm*weight*weight;
-                        
-                        
+
+
                     } else {
-                        
+
                         bdag_v_real[xx] += (vis_r1*beamsq_real2[j] + vis_r2*beamsq_real[j] + vis_i1*beamsq_imag2[j] + vis_i2*beamsq_imag[j] )/normal/norm*weight*weight +I*( vis_r1*beamsq_imag2[j] - vis_i1*beamsq_real2[j] + vis_r2*beamsq_imag[j] - vis_i2*beamsq_real[j] )/normal/norm*weight*weight;
-                        
+
                         bdag_v_realdiff[xx] += ( vis_r1*beamsq_real2[j] - vis_i2*beamsq_imag[j] + vis_i1*beamsq_imag2[j] - vis_r2*beamsq_real[j] )/normal/norm*weight*weight +I*( vis_r1*beamsq_imag2[j] - vis_i1*beamsq_real2[j] - vis_r2*beamsq_imag[j] + vis_i2*beamsq_real[j] )/normal/norm*weight*weight;
-                        
-                        
+
+
                     }
-                    
-                    
-                    
-                    
+
+
+
+
                     if ((debug)&&(ch == 9)) fprintf(flog,"bdag %f %f weight %f\n",creal(bdag_v_real[xx]),cimag(bdag_v_real[xx]),weight);
-                    
-                   
+
+
 /* EXPECTED NOISE CALC: Compute the expected contribution from a thermal-noise only visibility, located at the same point in the uvw-plane */
 
-                    
-                    
+
+
 			if (flag2 == 0){
 			noise_array[xx] += (beamsq_real[j]*(v1+v3) + beamsq_imag[j]*(v2+v4))/normal/norm*weight*weight + I*(-beamsq_imag[j]*(v1+v3) + beamsq_real[j]*(v2+v4))/normal/norm*weight*weight;
 			} else {
 			noise_array[xx] += (beamsq_real[j]*(v1+v3) + beamsq_imag[j]*(v2+v4))/normal/norm*weight*weight - I*(-beamsq_imag[j]*(v1+v3) + beamsq_real[j]*(v2+v4))/normal/norm*weight*weight;
 			}
-                    
+
                     if (flag2 == 0){
                         noisediff_array[xx] += (beamsq_real[j]*(v1-v3) + beamsq_imag[j]*(v2-v4))/normal/norm*weight*weight + I*(-beamsq_imag[j]*(v1-v3) + beamsq_real[j]*(v2-v4))/normal/norm*weight*weight;
                     } else {
                         noisediff_array[xx] += (beamsq_real[j]*(v1-v3) + beamsq_imag[j]*(v2-v4))/normal/norm*weight*weight - I*(-beamsq_imag[j]*(v1-v3) + beamsq_real[j]*(v2-v4))/normal/norm*weight*weight;
                     }
-                    
+
 
              //       printf("flagarray %lg\n",sqrt(0.5)*sqrt(beamsq_real[j]*beamsq_real[j] + beamsq_imag[j]*beamsq_imag[j] + beamsq_real2[j]*beamsq_real2[j] + beamsq_imag2[j]*beamsq_imag2[j])/total_norm_sq/norm*weight*weight);
-                    
+
 		flag_array[xx] += sqrt(0.5)*sqrt(beamsq_real[j]*beamsq_real[j] + beamsq_imag[j]*beamsq_imag[j] + beamsq_real2[j]*beamsq_real2[j] + beamsq_imag2[j]*beamsq_imag2[j])/total_norm_sq/norm*weight*weight;
-                     
+
              //       additup += flag_array[xx];
-                    
+
 				}
 			}   /* end loop over beam */
-                
-                
+
+
           //      printf("additup %lg %g\n",additup,total_norm_sq);
-                
+
 	}    /* end loop over weights being equal */
-       
+
 
 			total_vis++;
 			if (debug) fprintf(flog,"total vis %ld\n",total_vis);
 
-            
-        
-        
+
+
+
 			/* clean-up */
 			free(beam_real);
 			free(beam_imag);
@@ -508,7 +515,7 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 		}   /* end IF/ELSE loop for baseline inclusion */
 
 	} /* end loop over baselines for a given w stack and pol */
-        
+
 
 	} /* end if statement - don't process anything if no vis contribute!! */
 
@@ -517,10 +524,10 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 //	printf("Number of baselines contributing %ld of %d, at w-centre %g, polarization %d and frequency %g\n",contrib_vis,data->n_baselines[0],w_centre,pol,frequency);
 
     } /* End loop over wstacks before writing out files */
-    
+
   //  free(flag14m);
 
-    
+
 	if (debug) fclose(flog);
 //	if (debug) exit(1);
 
@@ -571,7 +578,7 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 
 
 		fclose(fptr);
-        
+
 		for (i=0;i<size_fin;i++){
 			noise_array[i] += temp_noise[i];
 		}
@@ -589,7 +596,7 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 			} else {
 			fclose(fptr);
 			}
-		
+
 		} else {
 		fprintf(flog,"Failed to increment observation noise file: %s\n",filename_real);
 		}
@@ -609,7 +616,7 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 		}
 
 	} else {
-	
+
 
 		if (temp_v_real == NULL) temp_v_real = malloc(size_fin*sizeof(double complex));
 		if (fread(temp_v_real,sizeof(double complex),size_fin,fptrv) != size_fin) printf("Error reading bv data into temp_v_real\n");
@@ -637,47 +644,47 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
 		}
 
 
-	}	
+	}
 
 
-        
-        
+
+
         /* DIFF FILES */
-        
+
         // Check to see if the file already exists
-        
+
         if ((fptr = fopen(filename_reald,"r")) == NULL){
-            
+
             if ((fptr = fopen(filename_reald,"w")) != NULL){
                 fwrite(noisediff_array,sizeof(double complex),size_fin,fptr);
                 fclose(fptr);
             } else {
                 fprintf(flog,"Failed to write observation noise file: %s\n",filename_reald);
             }
-            
+
         } else {
-            
+
             //		printf("File exists... opening...\n");
-            
+
             temp_noisediff = malloc(size_fin*sizeof(double complex));
             assert(temp_noisediff != NULL);
             if (fread(temp_noisediff,sizeof(double complex),size_fin,fptr) != size_fin){
                 printf("Error reading bv data into temp_noise\n");
                 fprintf(fptr,"Error reading bv data into temp_noise\n");
             }
-            
-            
+
+
             fclose(fptr);
-            
+
             for (i=0;i<size_fin;i++){
                 noisediff_array[i] += temp_noisediff[i];
             }
-            
-            
+
+
             free(temp_noisediff);
-            
+
             // write_out data
-            
+
             if ((fptr = fopen(filename_reald,"w")) != NULL){
                 if (fwrite(noisediff_array,sizeof(double complex),size_fin,fptr) != size_fin){
                     fprintf(flog,"Failed to increment observation noise file with incorrect number of members: %s\n",filename_reald);
@@ -686,17 +693,17 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
                 } else {
                     fclose(fptr);
                 }
-                
+
             } else {
                 fprintf(flog,"Failed to increment observation noise file: %s\n",filename_reald);
             }
-            
-            
+
+
         }
-        
-        
+
+
         if ((fptrv = fopen(filename_real2d,"r")) == NULL){
-            
+
             if ((fptrv = fopen(filename_real2d,"w")) != NULL){
                 fwrite(bdag_v_realdiff,sizeof(double complex),size_fin,fptrv);
                 fclose(fptrv);
@@ -704,23 +711,23 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
                 fprintf(flog,"Failed to write observation visibility file: %s\n",filename_real2d);
                 printf("Failed to write observation visibility file: %s\n",filename_real2d);
             }
-            
+
         } else {
-            
-            
+
+
             if (temp_v_realdiff == NULL) temp_v_realdiff = malloc(size_fin*sizeof(double complex));
             if (fread(temp_v_realdiff,sizeof(double complex),size_fin,fptrv) != size_fin) printf("Error reading bv data into temp_v_real\n");
-            
+
             fclose(fptrv);
-            
+
             for (i=0;i<size_fin;i++){
                 bdag_v_realdiff[i] += temp_v_realdiff[i];
             }
-            
+
             free(temp_v_realdiff);
-            
+
             // write_out data
-            
+
             if ((fptrv = fopen(filename_real2d,"w")) != NULL){
                 if (fwrite(bdag_v_realdiff,sizeof(double complex),size_fin,fptrv) != size_fin){
                     fprintf(flog,"Failed to increment observation vis file with incorrect number of members: %s\n",filename_real2d);
@@ -732,15 +739,15 @@ for (wstack=0;wstack<NUM_W_STACK;wstack++){
             } else {
                 fprintf(flog,"Failed to increment observation visibility file: %s\n",filename_real2d);
             }
-            
-            
-        }	
-        
 
-        
-        
+
+        }
+
+
+
+
         /* WEIGHTS FILE */
-        
+
         /* write-out flags file of sampled uv locations */
 
 	if ((fptrflags = fopen(filename_flags,"r")) == NULL){
@@ -801,7 +808,7 @@ return 0;
 /******************************
  ! NAME:		init_pb
  ! PURPOSE:		set-up PB to be used - uses pre-defined files when ALT/AZ used
- ! ARGUMENTS:	
+ ! ARGUMENTS:
  ! RETURNS:		integer (0=success)
 ******************************/
 
@@ -835,19 +842,19 @@ beamdata *init_pb(int freq_index, int pol) {
 
 
     /* original RBW beam */
-    
+
     //     if (pol == 0) sprintf(beamfilename,"%sbeam_ft_%03d_9_15_xx_sq.dat",getenv("BEAMDIR"),freq_index);
     //     if (pol == 1) sprintf(beamfilename,"%sbeam_ft_%03d_9_15_yy_sq.dat",getenv("BEAMDIR"),freq_index);
-    
+
     /* New Curtin beam!! */
-    
+
 		    if (pol == 0) sprintf(beamfilename,"%sbeam_ft_%03d_9_15_xx_sq_new.dat",getenv("BEAMDIR"),freq_index);
 		    if (pol == 1) sprintf(beamfilename,"%sbeam_ft_%03d_9_15_yy_sq_new.dat",getenv("BEAMDIR"),freq_index);
-   
-    
+
+
  //   if (pol == 0) sprintf(beamfilename,"%sbeam_ft_%03d_9_15_xx_sq_exp3.dat",getenv("BEAMDIR"),freq_index);
  //   if (pol == 1) sprintf(beamfilename,"%sbeam_ft_%03d_9_15_yy_sq_exp3.dat",getenv("BEAMDIR"),freq_index);
-    
+
 		/* No w-splitting settings
 		if (pol == 0) sprintf(beamfilename,"%sbeam_ft_%03d_pt%01d_xx.dat",getenv("BEAMDIR"),freq_index,NUM_POINT);
 		if (pol == 1) sprintf(beamfilename,"%sbeam_ft_%03d_pt%01d_yy.dat",getenv("BEAMDIR"),freq_index,NUM_POINT);
@@ -860,7 +867,7 @@ beamdata *init_pb(int freq_index, int pol) {
 		return NULL;
 		}
 		for (r=0;r<2;r++){
-		for (k=0;k<NUM_W_PLANES;k++){	
+		for (k=0;k<NUM_W_PLANES;k++){
 		for (l=0;l<NUM_POINT;l++){
 
   		for (ii=0;ii<SIZE_BEAM;ii++){
@@ -878,22 +885,22 @@ beamdata *init_pb(int freq_index, int pol) {
 
     for (k=0;k<NUM_W_PLANES;k++){
     for (l=0;l<NUM_POINT;l++){
-    
+
         for (ii=0;ii<SIZE_BEAM;ii++){
             for (j=0;j<SIZE_BEAM;j++){
-        
+
                 obj->normal[k][l] += sqrt((obj->real[0][k][l][j][ii])*(obj->real[0][k][l][j][ii]) + (obj->imag[0][k][l][j][ii])*(obj->imag[0][k][l][j][ii]));
                // /(DELTA_U/INTRINSIC_DELTA_U)/(DELTA_U/INTRINSIC_DELTA_U);
                 obj->total_norm_sq[k][l] += sqrt((obj->real[1][k][l][j][ii])*(obj->real[1][k][l][j][ii]) + (obj->imag[1][k][l][j][ii])*(obj->imag[1][k][l][j][ii]));
                //  /(DELTA_U/INTRINSIC_DELTA_U)/(DELTA_U/INTRINSIC_DELTA_U);
-            
+
             }
         }
-                                                         
+
     }
     }
-    
-    
+
+
 		/* Introduce new normalisation of beams - March 16, 2015 */
 
 		sprintf(ufile,"%sbeam_u_%d.dat",getenv("BEAMDIR"),SIZE_BEAM);
@@ -936,8 +943,8 @@ double modd(double val){
     if ((val < 0.)&&(val > -M_PI)) return val;
     if ((val > 0.)&&(val >= M_PI)) return val - 2.*M_PI;
     if ((val < 0.)&&(val <= -M_PI)) return val + 2.*M_PI;
-    
-    
+
+
 
 }
 
@@ -971,7 +978,7 @@ return 0;
 ******************************/
 
 int get_pbsq_values(beamdata *bdata, int w_index, int point, int kernel_size, double *uvalues, double *vvalues, double uu, double vv, double *beamsq_real, double *beamsq_imag, float factor_scale) {
-    
+
 beam_diff_mwa_vector_2D(bdata->real[1][w_index][point],bdata->imag[1][w_index][point],bdata->u_tab,uvalues,uu,vvalues,vv,kernel_size,beamsq_real,beamsq_imag,factor_scale);
 
 /* No w-splitting */
@@ -1013,12 +1020,12 @@ for (k=0;k<NUM_W_PLANES;k++){
 	}
 }
 }
-    
+
     for (k=0;k<NUM_W_PLANES;k++){
     free(b->normal[k]);
     free(b->total_norm_sq[k]);
     }
-    
+
 free(b);
 
 
@@ -1047,7 +1054,7 @@ for (i=0;i<size;i++){
 	if ((sqrt((utemp-uprime)*(utemp-uprime)) >= u_tab[0])||(sqrt((vtemp-vprime)*(vtemp-vprime)))) {
 	  xloc = ((utemp-uprime)*factor_scale-u_tab[0])/(u_tab[1]-u_tab[0]);
 	  yloc = ((vtemp-vprime)*factor_scale-u_tab[0])/(u_tab[1]-u_tab[0]);
-	   
+
 	interp_bilin(beam_r,xloc,yloc,&out_real[i]);
 	interp_bilin(beam_i,xloc,yloc,&out_imag[i]);
 
@@ -1106,26 +1113,26 @@ int interp(float **uvgrid, double u, double v, double *res_re) {
         x1[i]=i-1.0; /* coords of columns (V) from UV plane */
         x2[i]=i-1.0; /* coords of rows (U) from UV plane */
     }
-    
-    
+
+
   if (!init) {
     for (i=0; i<SIZ_SPLINE; i++){
       y[i]  = calloc(SIZ_SPLINE,sizeof(float));
       y2[i] = calloc(SIZ_SPLINE,sizeof(float));
     }
     init=1;
-    
+
   }
 
   re=0.0;
 
-    /* set y values for spline (REAL) 
-    for (j=0; j<SIZ_SPLINE; j++){          loop over rows 
-      for (i=0; i<SIZ_SPLINE; i++){        loop over cols 
+    /* set y values for spline (REAL)
+    for (j=0; j<SIZ_SPLINE; j++){          loop over rows
+      for (i=0; i<SIZ_SPLINE; i++){        loop over cols
 	val=getUVCell2D(m+i-1,n+j-1,sx,sy, uvgrid);
         y[j][i] = creal(val);
       }
-    }  
+    }
 */
 
 
@@ -1143,12 +1150,12 @@ int interp(float **uvgrid, double u, double v, double *res_re) {
 
 
   *res_re = re;
-    
+
     free(x1);
     free(x2);
     free(y);
     free(y2);
-    
+
   return 0;
 }
 
@@ -1258,7 +1265,7 @@ for (r=0;r<sizer;r++){
  ! PURPOSE:		Bilinear interpolation for complex numbers
  sx,sy: size of grid x and y axes
  u,v: desired location to interpolate to in pixel units.
- 
+
  ***************************************************/
 
 int interp_bilin(float **uvgrid, double u, double v, double *res_re) {
@@ -1266,23 +1273,23 @@ int interp_bilin(float **uvgrid, double u, double v, double *res_re) {
     float p,q;
     float Q11,Q12,Q21,Q22;
     float re=0;
-    
+
     m = (int)u;   /* nearest integer cell number such that offset is positive */
     n = (int)v;
     if (u < 0) m -= 1;
     if (v < 0) n -= 1;
     p = u-m;	 /* p,q become positive offsets within the cell */
     q = v-n;
-    
+
     Q11 = uvgrid[m][n];
     Q21 = uvgrid[m+1][n];
     Q12 = uvgrid[m][n+1];
     Q22 = uvgrid[m+1][n+1];
-    
+
     re = Q11*(1.-p)*(1.-q) + Q21*p*(1.-q) + Q12*(1.-p)*q + Q22*p*q;
-    
+
     *res_re = re;
-    
+
     return 0;
 }
 
@@ -1308,7 +1315,7 @@ float ***output;
      output[k][l] = calloc(sizez,sizeof(float));
    }
  }
- 
+
  return output;
 
 
