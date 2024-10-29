@@ -8,7 +8,7 @@
 #include <libgen.h> // for basename()
 #include "cspline.h"
 #include <getopt.h>
-#include "slalib.h"
+#include <star/pal.h>
 #include "uvfits.h"
 #include "primary_beam.h"
 #include "fitsio.h"
@@ -135,7 +135,7 @@ if (argc < 2){
     fprintf(stderr,"\t -field fieldnum\n");
     exit(1);
 }
-    
+
 printf("Program to calculate the beam weights for an MWA observation.\n\n");
 
 //infilestub = argv[1];
@@ -145,12 +145,12 @@ printf("Program to calculate the beam weights for an MWA observation.\n\n");
 Nchan = atoi(argv[3]);
     ext = argv[4];
     polval = argv[5];
-    
+
     printf("polval %s\n",polval);
-    
+
     parse_cmdline(argc,argv);
 
- 
+
 {
 
 	char tmp1[FILENAME_MAX],*p;
@@ -170,10 +170,10 @@ Nchan = atoi(argv[3]);
 
 fprintf(flog,"Processed with version %f of DS on %s\n",VERSION,asctime(localtime(&tim)));
 
-    
+
     az = 0.;
     el = 90.0;
-    
+
 /* define uv grid size and spacing */
 
 u_size = floor(UMAX/DELTA_U);
@@ -184,10 +184,10 @@ if (HALF_PLANE_FLAG){size_fin = (int) 2.*u_size*u_size;} else { size_fin = (int)
 
 
    /* Build Fourier Kernel for LOS transform */
-    
+
     Neta = Nchan/2;
 float Nchanfloat = (float) Nchan;
-    
+
     fourier = create2DMatrixFloatComplex(Neta,Nchan);
     for (j=0;j<Nchan;j++){
 //        for (i=0;i<Neta;i++) fourier[i][j] = cos(2.*M_PI*((float) i)*((float) j)/((float) Nchan)) - I*sin(2.*M_PI*((float) i)*((float) j)/((float) Nchan));
@@ -196,13 +196,13 @@ float Nchanfloat = (float) Nchan;
 //printf("i %d j %d fourier %f %f\n",i,j,creal(fourier[i][j]),cimag(fourier[i][j]));
 }
     }
-    
+
     nut_func = calloc(Nchan,sizeof(float));
     for (j=0;j<Nchan;j++){
         for (i=0;i<4;i++) nut_func[j] += a_nut[i]*cos(2.*M_PI*(float) i*(j-Nchan/2.)/(float) Nchan);
     }
-    
-    
+
+
 //    printf("nut func %f %f\n",nut_func[0],nut_func[Nchan/2]);
 
 /* Define dense vector for bdag_v accumulation and flags for uv-sampling */
@@ -222,9 +222,9 @@ sprintf(infilename,"%s/%s.uvfits",getenv("DATADIR"),ext);
 	printf("Filename: %s\n",infilename);
 
     chunk = 0;
-    
+
 /* read-in uvfits data */
-    
+
     uvfitsSetDebugLevel(0);
     res = readUVFITSInitIterator(infilename, &data, &iter);
     res = readUVFITSInitIterator(infilename, &data2, &iter2);
@@ -242,15 +242,15 @@ printf("%d\n",nbase);
     diff = create2DMatrixFloat(nbase,Nchan);
     numdiff = create2DMatrixFloat(Nchan,Nchunk);
         final_stdnorm = create2DMatrixFloat(Nchan,Nchunk);
-    
+
 	uvw = create2DMatrixFloat(nbase,3);
-    
+
 /* Key parameters for cosmological transformation - magic numbers that are secrets of the cosmos */
-    
+
 BW = 30.72e6;
 factor_kpa = 1.78e-06;
 DM = 6178./2./M_PI;
-    
+
 
         for (i=0;i<nbase;i++){
             for (k=0;k<Neta;k++){
@@ -258,7 +258,7 @@ DM = 6178./2./M_PI;
              vis_diff[i][k] = 0.+I*0.;
              }
         }
-        
+
 
 
 
@@ -266,7 +266,7 @@ DM = 6178./2./M_PI;
         fprintf(stderr,"readUVFITSInitIterator failed on timestep2 with error %d\n",res);
         return res;
     }
-    
+
     fflush(stdout);
 
     /* Dummy read of data2 to increment it to second timestep */
@@ -277,24 +277,24 @@ DM = 6178./2./M_PI;
 
 
 /* code runs entirely within WHILE loop, which loops over sections of the input data file (one timestep per iteration) */
-    
+
     uvfitsSetDebugLevel(0);
     printf("freq. channels %d, num vis %d\n",data->n_freq,data->n_vis);
 
     while ((res=readUVFITSnextIter(data,iter)) ==0) {
         printf("Chunk %d. Time: %f. baselines: %d\n",chunk++,data->date[0],data->n_baselines[0]);
 
-        
+
         if (band == 0) lowfreq = LOWER_FREQ;
-        if (band == 1) lowfreq = LOWER_FREQ_HIGH;      
-       
+        if (band == 1) lowfreq = LOWER_FREQ_HIGH;
+
 /************************************************/
 /* Loop over channels to compute each frequency separately for each OpenMP thread */
 
-        
+
         if (strcmp(polval, "yy") == 0){
             pol = 1;
-            
+
         }
         if (strcmp(polval, "xx") == 0){
             pol = 0;
@@ -302,7 +302,7 @@ DM = 6178./2./M_PI;
         if (strcmp(polval, "xy") == 0){
             pol = 2;
         }
-   
+
         /*
         if (polval == 'yy'){
             pol = 1;
@@ -311,9 +311,9 @@ DM = 6178./2./M_PI;
             pol = 0;
         }
          */
-        
+
         printf("Pol: %s %d\n",polval,pol);
-        
+
 
        for (i=0;i<nbase;i++){
             for (k=0;k<Neta;k++){
@@ -321,7 +321,7 @@ DM = 6178./2./M_PI;
              vis_diff[i][k] = 0.+I*0.;
              }
         }
-  
+
 	for (ch=0;ch<data->n_freq;ch++){
 
 	// get frequency information //
@@ -331,11 +331,11 @@ DM = 6178./2./M_PI;
 
 //	printf("Frequency: %g Channel: %d %f %f\n",frequency,ch,CHAN_WIDTH,data->freq_delta);
 
-       
+
 
 	for (i=0;i<data->n_baselines[0];i++){
 //         printf("baseline: %d\n",i);
-				
+
  //       if (data->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] > 64.) printf("weight large!\n");
 
 
@@ -356,54 +356,54 @@ DM = 6178./2./M_PI;
 		vis_rtot = 0.;
         vis_idiff = 0.;
         vis_rdiff = 0.;
-        
+
         // Compute the normalising factor to handle different weights
-        
+
         w1 = data->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)];
         w2 = data2->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)];
-        
+
         norm_factor = sqrt(1./w1 + 1./w2);
 
 
-        
+
   //      if ((ch == 380)&&(i == 99)&&(pol == 1)) printf("Is it the same? %f %f\n",(data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)]),(data2->visdata[0][2*(i*(data2->n_pol*data2->n_freq) + ch*data2->n_pol + pol)]));
 
             if ((data->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] > 0.)&&(data2->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] > 0.)) vis_rtot = (data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] + data2->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)]);
- 
+
             if ((data->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol+1)] > 0.)&&(data2->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol+1)] > 0.)) vis_itot = (data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)+1] + data2->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)+1]);
-        
-        
-        
+
+
+
         if ((data->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] > 0.)&&(data2->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] > 0.)) vis_rdiff = (data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)] - data2->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)]);
-        
+
         if ((data->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol+1)] > 0.)&&(data2->weightdata[0][(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol+1)] > 0.)) vis_idiff = (data->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)+1] - data2->visdata[0][2*(i*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)+1]);
-        
-        
+
+
 
 			if (debug) fflush(flog);
 
 				/* compute u and v locations for each cell */
 
- 
+
 		/* Loop over output LOS Fourier bins and contribute to each */
 		for (k=0;k<Neta;k++){  //loop over eta modes
-                          
-			
+
+
  				vis_tot[i][k] += fourier[k][ch]*(vis_rtot + I*vis_itot)*nut_func[ch];//*vis_corr;
  				vis_diff[i][k] += fourier[k][ch]*(vis_rdiff + I*vis_idiff)*nut_func[ch];
 
-            
+
 //if ((i == 0)&&(k == 0)) printf("Outputs: %f %f %f %f\n",fourier[k][ch],vis_rtot,vis_itot,creal(vis_tot[i][k]));
-				
-                     
+
+
 		}
-            
-        
+
+
 		}
-        
+
           //     printf("Channel %d Chunk %d\n",ch,chunk);
-        
-  
+
+
 
 //printf("Number of cells: %d %f %f %f\n",i,numb,numb2,distance);
 
@@ -412,19 +412,19 @@ fflush(flog);
 }  //  ******** end loop over channels ********
   //      printf("Here1\n");
         chunk++;
-        
-        
-        
+
+
+
         	for (i=0;i<data->n_baselines[0];i++){
-	
+
 			uu = data->u[0][i]*(frequency);
 			vv = data->v[0][i]*(frequency);
 			ww = data->w[0][i]*(frequency);
 
 			distance = sqrt(uu*uu + vv*vv);
-                
+
             //    printf("k min: %f\n",factor_kpa*BW/DM*distance);
-	
+
 		for (k=0;k<Neta;k++){  //loop over eta modes
 
 				if (((float) k > 4)&&(k < 19)&&(distance > 0)&&(distance < 100)){
@@ -444,7 +444,7 @@ fflush(flog);
 
 		}
 	}
-	
+
 
 
          if ((res=readUVFITSnextIter(data2,iter2)) !=0){
@@ -459,19 +459,19 @@ fflush(flog);
 		ffcmrk;
             break;
         }
-        
+
    //     printf("Here2\n");
-        
+
         }  //*************** END WHILE LOOP OVER UVFITS TIME STEPS *******/
 
 
     if(res != 1) {
         fprintf(stderr,"readUVFISTnextIter returned %d\n",res);
     }
-    
 
 
-	
+
+
 	printf("Iter closing\n");
 
     readUVFITSCloseIter(iter);
@@ -482,8 +482,8 @@ fflush(flog);
 
 
 /* Output FT-ed visibilities */
-        
-  
+
+
 
 /************** OUTPUT FILES ********************/
 	/* define filenames */
@@ -497,7 +497,7 @@ denom2 = numb2;
 
         sprintf(filename_real2,"%soutput_metrics_%s.%s.dat",getenv("OUTPUTDIR"),obsid,polval);
         printf("%s\n",filename_real2);
- 
+
 	// Check to see if the file already exists
 
 		if ((fptrv = fopen(filename_real2,"a+")) != NULL){
@@ -517,8 +517,8 @@ denom2 = numb2;
 
         free(data);
         free(data2);
-        
-    
+
+
     fclose(flog);
 
     return 0;
@@ -611,7 +611,7 @@ for (j=0;j<y1size;j++){
 	for (k=0;k<x1size;k++){
 
 		outMat[i][j] += mat1[k][j]*mat2[i][k];
-	
+
 	}
 }
 }
@@ -622,19 +622,19 @@ int CmatrixMatrixMultiply(int x1size, int y1size, int x2size, int y2size, double
 int i,j,k;
 
  if (x1size != y2size) exit(1);
- 
+
  for (i=0;i<x2size;i++){
    for (j=0;j<y1size;j++){
      for (k=0;k<x1size;k++){
-	  
+
        outMatreal[i][j] += mat1real[k][j]*mat2real[i][k] - mat1imag[k][j]*mat2imag[i][k];
        outMatimag[i][j] += mat1real[k][j]*mat2imag[i][k] + mat1imag[k][j]*mat2real[i][k];
-	  
+
      }
    }
  }
  return 0;
- 
+
 }
 
 int CmatrixMatrixMultiplyConj(int x1size, int y1size, int x2size, int y2size, double **mat1real, double **mat1imag, double **mat2real, double **mat2imag, double **outMatreal, double **outMatimag){
@@ -650,7 +650,7 @@ for (j=0;j<y1size;j++){
 
 		outMatreal[i][j] += mat1real[k][j]*mat2real[i][k] + mat1imag[k][j]*mat2imag[i][k];
 		outMatimag[i][j] += -mat1real[k][j]*mat2imag[i][k] + mat1imag[k][j]*mat2real[i][k];
-	
+
 	}
 }
 }
@@ -673,7 +673,7 @@ for (j=0;j<y1size;j++){
 
 		outMatreal[i][j] += mat1real[k][j]*mat2real[k][i] + mat1imag[k][j]*mat2imag[k][i];
 		outMatimag[i][j] += -mat1real[k][j]*mat2imag[k][i] + mat1imag[k][j]*mat2real[k][i];
-	
+
 	}
 }
 }
@@ -888,7 +888,7 @@ float ***output;
      output[k][l] = calloc(sizez,sizeof(float));
    }
  }
- 
+
  return output;
 
 
@@ -900,26 +900,26 @@ float ***output;
 double complex **create2DMatrixComplex(int sizex, int sizey){
     double complex **output;
     int k;
-    
+
     output = calloc(sizex,sizeof(double complex*));
     for (k=0;k<sizex;k++){
         output[k] = calloc(sizey,sizeof(double complex));
     }
     return output;
-    
+
 }
 
 
 float complex **create2DMatrixFloatComplex(int sizex, int sizey){
     float complex **output;
     int k;
-    
+
     output = calloc(sizex,sizeof(float complex*));
     for (k=0;k<sizex;k++){
         output[k] = calloc(sizey,sizeof(float complex));
     }
     return output;
-    
+
 }
 
 
@@ -961,7 +961,7 @@ int k;
 
 double *create1DVector(int size){
 double *output;
-	
+
 	output = calloc(size,sizeof(double));
 	return output;
 
@@ -977,9 +977,9 @@ void memzero2D(double **matrix,int xsize, int ysize){
 
 void memzero2DFloat(float **matrix,int xsize, int ysize){
     int i;
-    
+
     for (i=0;i<xsize;i++) memset(matrix[i],0.,ysize*sizeof(float));
-    
+
 }
 
 
@@ -1026,15 +1026,15 @@ void free_mem(double **matrix, int xsize, int ysize){
 
 void free_memFloat(float **matrix, int xsize, int ysize){
     int i;
-    
+
     for (i=0;i<xsize;i++) free(matrix[i]);
-    
+
 }
 
 
 void free_mem3D(double ***matrix, int xsize, int ysize, int zsize){
     int i,j;
-    
+
     for (i=0;i<xsize;i++){
         for (j=0;j<ysize;j++) free(matrix[i][j]);
             }
