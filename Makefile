@@ -34,6 +34,9 @@ fft_simple: fft_krig_stripped.c uvfits.c primary_beamDEV.c cspline.c libsla.a
 	ranlib libsla.a
 	cc $(CFLAGS) $(INCS) $(CFITSIO_INCS)  -o lssa_fg_simple fft_krig_stripped.c uvfits.c primary_beamDEV.c cspline.c $(CFITSIO_LIBS) -lcfitsio -lm -fopenmp -lgsl -lgslcblas
 	
+fft_general: fft_krig_simple.c uvfits.c primary_beamDEV.c cspline.c libsla.a
+	ranlib libsla.a
+	cc $(CFLAGS) $(INCS) $(CFITSIO_INCS)  -o lssa_fg_general fft_krig_simple.c uvfits.c primary_beamDEV.c cspline.c $(CFITSIO_LIBS) -lcfitsio -lm -fopenmp -lgsl -lgslcblas
 	
 
 libsla.a:
