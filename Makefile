@@ -34,12 +34,15 @@ gridvisdiff: grid_vis_PB_chips.c uvfits.c primary_beamBNanalytic.c cspline.c
 prepare_diff: prepare_cube_chips.c uvfits.c primary_beamDIFF.c cspline.c
 	$(CC) $(CFLAGS) $(INCS) $(CFITSIO_INCS) $(GSL_INCS) $(LDFLAGS) -o prepare_diff prepare_cube_chips.c uvfits.c primary_beamDIFF.c cspline.c $(CFITSIO_LIBS) -lfftw3   -lm -fopenmp -lpal
 
-lssa_fg_simple: fft_krig_stripped.c uvfits.c primary_beamDEV.c cspline.c
-	$(CC) $(CFLAGS) $(INCS) $(CFITSIO_INCS) $(BLAS_INCS) $(GSL_INCS) $(LDFLAGS) -o lssa_fg_simple fft_krig_stripped.c uvfits.c primary_beamDEV.c cspline.c $(CFITSIO_LIBS) -lm -fopenmp $(GSL_LIBS) -lpal
+fft_simple: fft_krig_stripped.c uvfits.c primary_beamDEV.c cspline.c
+	$(CC) $(CFLAGS) $(INCS) $(CFITSIO_INCS) $(BLAS_INCS) $(GSL_INCS) $(LDFLAGS) -o lssa_fg_simple fft_krig_stripped.c uvfits.c primary_beamDEV.c cspline.c $(CFITSIO_LIBS) $(GSL_LIBS) -lm -fopenmp -lgsl -lgslcblas -lpal
+
+fft_general: fft_krig_simple.c uvfits.c primary_beamDEV.c cspline.c
+	$(CC) $(CFLAGS) $(INCS) $(CFITSIO_INCS) $(BLAS_INCS) $(GSL_INCS) $(LDFLAGS) -o lssa_fg_general fft_krig_simple.c uvfits.c primary_beamDEV.c cspline.c $(CFITSIO_LIBS) $(GSL_LIBS) -lm -fopenmp -lgsl -lgslcblas -lpal
 
 install: all
 	mkdir -p $(PREFIX)/bin
-	cp $(TARGETS) $(PREFIX)/bin
+	mv $(TARGETS) $(PREFIX)/bin
 
 clean:
 	rm -f *.o $(TARGETS)
