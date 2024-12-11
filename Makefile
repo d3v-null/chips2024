@@ -5,7 +5,15 @@
 # spack install gsl pal
 # spack load spack load gsl@2.7.1/th42khq pal
 
-CFLAGS=-g -O -D_FILE_OFFSET_BITS=64 -L.
+# on macos
+# brew install llvm libomp icecube/icecube/pal openblas
+# export PKG_CONFIG_PATH="$(brew --prefix)/opt/openblas/lib/pkgconfig"
+# export LDFLAGS="-L$(brew --prefix)/opt/llvm/lib -L$(brew --prefix)/lib"
+# export CFLAGS="-g -O -D_FILE_OFFSET_BITS=64 -L. -I$(brew --prefix)/opt/llvm/include -I$(brew --prefix)/include"
+# export CC=$(brew --prefix)/opt/llvm/bin/clang
+# export CXX=$(brew --prefix)/opt/llvm/bin/clang++
+
+CFLAGS ?= -g -O -D_FILE_OFFSET_BITS=64 -L.
 BLAS_INCS=$(shell pkg-config --silence-errors --cflags openblas)
 BLAS_LIBS=$(shell pkg-config --silence-errors --libs openblas)
 CFITSIO_INCS=$(shell pkg-config --silence-errors --cflags cfitsio)
