@@ -16,6 +16,8 @@
 CFLAGS ?= -g -O -D_FILE_OFFSET_BITS=64 -L.
 BLAS_INCS=$(shell pkg-config --silence-errors --cflags openblas)
 BLAS_LIBS=$(shell pkg-config --silence-errors --libs openblas)
+GSL_INCS=$(shell pkg-config --silence-errors --cflags gsl)
+GSL_LIBS=$(shell pkg-config --silence-errors --libs gsl)
 CFITSIO_INCS=$(shell pkg-config --silence-errors --cflags cfitsio)
 CFITSIO_LIBS=$(shell pkg-config --silence-errors --libs cfitsio)
 
@@ -27,13 +29,13 @@ PREFIX ?= /usr/local
 all: $(TARGETS)
 
 gridvisdiff: grid_vis_PB_chips.c uvfits.c primary_beamBNanalytic.c cspline.c
-	cc $(CFLAGS) $(INCS) $(CFITSIO_INCS) $(BLAS_INCS) $(GSL_INCS) -o gridvisdiff grid_vis_PB_chips.c uvfits.c primary_beamBNanalytic.c cspline.c $(CFITSIO_LIBS) $(BLAS_LIBS) -lcfitsio  -lm -fopenmp -pg -lpal
+	$(CC) $(CFLAGS) $(INCS) $(CFITSIO_INCS) $(BLAS_INCS) $(GSL_INCS) $(LDFLAGS) -o gridvisdiff grid_vis_PB_chips.c uvfits.c primary_beamBNanalytic.c cspline.c $(CFITSIO_LIBS) $(BLAS_LIBS)  -lm -fopenmp -pg -lpal
 
 prepare_diff: prepare_cube_chips.c uvfits.c primary_beamDIFF.c cspline.c
-	cc $(CFLAGS) $(INCS) $(CFITSIO_INCS) $(GSL_INCS) -o prepare_diff prepare_cube_chips.c uvfits.c primary_beamDIFF.c cspline.c $(CFITSIO_LIBS) -lfftw3 -lcfitsio   -lm -fopenmp -lpal
+	$(CC) $(CFLAGS) $(INCS) $(CFITSIO_INCS) $(GSL_INCS) $(LDFLAGS) -o prepare_diff prepare_cube_chips.c uvfits.c primary_beamDIFF.c cspline.c $(CFITSIO_LIBS) -lfftw3   -lm -fopenmp -lpal
 
 lssa_fg_simple: fft_krig_stripped.c uvfits.c primary_beamDEV.c cspline.c
-	cc $(CFLAGS) $(INCS) $(CFITSIO_INCS) $(GSL_INCS) -o lssa_fg_simple fft_krig_stripped.c uvfits.c primary_beamDEV.c cspline.c $(CFITSIO_LIBS) -lcfitsio -lm -fopenmp -lgsl -lgslcblas -lpal
+	$(CC) $(CFLAGS) $(INCS) $(CFITSIO_INCS) $(BLAS_INCS) $(GSL_INCS) $(LDFLAGS) -o lssa_fg_simple fft_krig_stripped.c uvfits.c primary_beamDEV.c cspline.c $(CFITSIO_LIBS) -lm -fopenmp $(GSL_LIBS) -lpal
 
 install: all
 	mkdir -p $(PREFIX)/bin
