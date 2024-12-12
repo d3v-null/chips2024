@@ -9,7 +9,6 @@
 #include <libgen.h> // for basename()
 #include "cspline.h"
 #include <getopt.h>
-#include "slalib.h"
 #include "uvfits.h"
 #include "primary_beam.h"
 #include "fitsio.h"
