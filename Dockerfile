@@ -31,15 +31,15 @@ RUN apt-get update -y \
     && apt-get -y autoremove
 
 # install pal
-WORKDIR /pal
-RUN wget https://github.com/Starlink/pal/releases/download/v0.9.8/pal-0.9.8.tar.gz \
-    && tar -xvf pal-0.9.8.tar.gz \
-    && cd pal-0.9.8 \
-    && ./configure --prefix=/usr/local --without-starlink \
-    && make \
-    && make install \
-    && ldconfig \
-    && rm -rf /pal
+# WORKDIR /pal
+# RUN wget https://github.com/Starlink/pal/releases/download/v0.9.8/pal-0.9.8.tar.gz \
+#     && tar -xvf pal-0.9.8.tar.gz \
+#     && cd pal-0.9.8 \
+#     && ./configure --prefix=/usr/local --without-starlink \
+#     && make \
+#     && make install \
+#     && ldconfig \
+#     && rm -rf /pal
 
 # install cfitsio
 WORKDIR /cfitsio
@@ -55,7 +55,7 @@ RUN wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio-4.3.0.tar.gz
 # provide source code files from the host
 ADD . /chips
 WORKDIR /chips
-RUN make install INCS="-I/usr/include/pal/" LDFLAGS="-L/usr/lib" PREFIX=/usr/local
+RUN make install PAL_LIBS="-lstarlink_pal" PREFIX=/usr/local
 
 # docker build . -t d3vnull0/chips2024:latest
 # docker run -it --rm d3vnull0/chips2024:latest /bin/bash

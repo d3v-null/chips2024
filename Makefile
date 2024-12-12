@@ -13,14 +13,16 @@
 # export CC=$(brew --prefix)/opt/llvm/bin/clang
 # export CXX=$(brew --prefix)/opt/llvm/bin/clang++
 
-# in the docker container
+# on ubuntu
 # export INCS="-I/usr/include/pal/"
-# export LDFLAGS="-L/usr/lib"
+# export LDFLAGS="-L/usr/lib -L/usr/lib/x86_64-linux-gnu"
+# export PAL_LIBS="-lstarlink_pal"
 
 CFLAGS ?= -g -O -D_FILE_OFFSET_BITS=64 -L.
 CFITSIO_INCS=$(shell pkg-config --cflags cfitsio)
 CFITSIO_LIBS=$(shell pkg-config --libs cfitsio)
-PAL_LIBS=-lpal
+PAL_LIBS ?= -lpal
+# to use ubuntu libstarlink-pal-dev, export PAL_LIBS="-lstarlink_pal"
 BLAS_INCS=$(shell pkg-config --cflags openblas)
 BLAS_LIBS=$(shell pkg-config --libs openblas)
 LAPACK_INCS=$(shell pkg-config --cflags lapack)
