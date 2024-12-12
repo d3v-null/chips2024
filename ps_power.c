@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
   double ra_app, dec_app, ra_point, dec_point, ra_offset, dec_offset, ra_field, dec_field, ra_zenith, dec_zenith;
   double u_size, systemp, weight, v1, v2, v3, v4, numb2 = 0., numb = 0., numb3 = 0., denom1 = 1., denom2 = 1., denom3 = 1.;
   char syslogfile[1024], infilename[1024], maskfile[1024], filename_real[1024], filename_real2[1024], filename_flags[1024], debugfile[1024], filename_real3[1024], filename_uvw[1024], filename_noise[1024], infilestub[1024], *ext = NULL;
-  unsigned long obsid;
+  char *obsid;
   char outfilename[1024], temp[1024], outfilename2[1024], outfilename3[1024];
   float vis_rtot, vis_itot, vis_rdiff, vis_idiff, **flag_array = NULL, *mask = NULL, az, el, dec_rad, mjd, lmst, m_rot, l_rot, az_point, alt_point, clight = 2.997e8;
   float beamsigma = 0.1, D = 4.4, vis_corr = 1., lowfreq = LOWER_FREQ, factor_kpa = 0., DM = 0., BW = 0., power_window = 0., power_wedge = 0., power_all = 0., **numdiff = NULL, **diff = NULL;
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 
   // infilestub = argv[1];
   //    infilelist = argv[1];
-  obsid = atoi(argv[1]);
+  obsid = (argv[1]);
   band = atoi(argv[2]);
   Nchan = atoi(argv[3]);
   ext = argv[4];
