@@ -46,8 +46,10 @@ WORKDIR /cfitsio
 RUN wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio-4.3.0.tar.gz \
     && tar -zxvf cfitsio-4.3.0.tar.gz \
     && cd cfitsio-4.3.0/ \
-    && CFLAGS="-O3" ./configure --prefix=/usr/local --enable-reentrant --enable-ssse3 --enable-sse2 --disable-curl \
-    && make -j $(nproc) \
+    && CFLAGS="-O3" ./configure --prefix=/usr/local --enable-reentrant \
+    $(if [ "$TARGETARCH" = "amd64" ]; then echo "--enable-ssse3 --enable-sse2"; fi) \
+    --disable-curl \
+    && make $(if [ "$TARGETARCH" = "amd64" ]; then echo "-j$(nproc)"; else echo "-j1"; fi) \
     && make install \
     && ldconfig \
     && rm -rf /cfitsio
@@ -57,6 +59,5 @@ ADD . /chips
 WORKDIR /chips
 RUN make install PAL_LIBS="-lstarlink_pal" PREFIX=/usr/local
 
-# docker build . -t d3vnull0/chips2024:latest
+# docker buildx build --platform=arm64,amd64 . -t d3vnull0/chips2024:latest --push
 # docker run -it --rm d3vnull0/chips2024:latest /bin/bash
-# docker push d3vnull0/chips2024:latest
