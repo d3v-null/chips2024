@@ -19,6 +19,7 @@
 # export PAL_LIBS="-lstarlink_pal"
 
 CFLAGS ?= -g -O -D_FILE_OFFSET_BITS=64 -L.
+# CFLAGS ?= -ggdb -O0 -D_FILE_OFFSET_BITS=64 -L.
 CFITSIO_INCS=$(shell pkg-config --cflags cfitsio)
 CFITSIO_LIBS=$(shell pkg-config --libs cfitsio)
 PAL_LIBS ?= -lpal
