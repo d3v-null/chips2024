@@ -210,7 +210,7 @@ for (i=0;i<nbins+1;i++) lperp[i] = (float)i/((float)nbins+1.)*lmax;
 	fprintf(flog,"Opening and reading diff files...\n");
 
 	sprintf(bvfilename,"%svis_diff_%s.%s.dat",getenv("INPUTDIR"),pol,extension);
-	sprintf(flagfilename,"%snoise_diff_%s.%s.dat",getenv("INPUTDIR"),pol,extension);
+	sprintf(flagfilename,"%svis_diff_%s.%s.dat",getenv("INPUTDIR"),pol,extension);
 	sprintf(bbfilename,"%sweights_%s.%s.dat",getenv("INPUTDIR"),pol,extension);
 
 	printf("bvfilename: %s\n",bvfilename);
@@ -265,7 +265,7 @@ printf("bvfilename: %s\n",bvfilename);
 	fprintf(flog,"Opening and reading set 1 files...\n");
 
 	sprintf(bvfilename,"%svis_tot_%s.%s.dat",getenv("INPUTDIR"),pol,extension);
-	sprintf(flagfilename,"%snoise_tot_%s.%s.dat",getenv("INPUTDIR"),pol,extension);
+	sprintf(flagfilename,"%svis_tot_%s.%s.dat",getenv("INPUTDIR"),pol,extension);
 
 	vis1 = create3DMatrixComplex(u_size+1,2.*u_size,Nchan);
 	flags1 = create3DMatrixComplex(u_size+1,2.*u_size,Nchan);
@@ -746,7 +746,7 @@ int dft_cross_pro(float u, int Nchan, float complex* vis0, float complex* vis1, 
     
 
 	Nfreq = Nchan;
-    num = (int)((float)Nchan*0.875);
+ //   num = (int)((float)Nchan*0.875);
 //    num = Nchan;
  //   if (bias_mode == 10) num=166;
     if ((bias_mode == 15)||(bias_mode == 14)) num = 162;
@@ -774,7 +774,8 @@ int dft_cross_pro(float u, int Nchan, float complex* vis0, float complex* vis1, 
   //  printf("sigma %f weighttot %f\n",sigma2,weighttot);
     
     float weight2tot = 0.;
-    for (i=0;i<Nchan;i++) weight2tot += sqrt(weights0[i])/(float)num;
+ //   for (i=0;i<Nchan;i++) weight2tot += sqrt(weights0[i])/(float)num;
+    for (i=0;i<Nchan;i++) weight2tot += sqrt(1.)/(float)num;
     
   /*  for (i=0;i<Nchan;i++){
         
@@ -852,6 +853,12 @@ printf("Flagging DC mode\n");
             F0[counter] = (flags0[i]-flags0tot)*nut_func[i]/filter_total*(float)num*sqrt(weights0[i])/weight2tot;
             S1[counter] = (vis1[i]-vis1tot)*nut_func[i]/(filter_total)*(float)num*sqrt(weights0[i])/weight2tot; // This is S
             F1[counter] = (flags1[i]-flags1tot)*nut_func[i]/filter_total*(float)num*sqrt(weights0[i])/weight2tot;
+ 
+ 
+            S0[counter] = (vis0[i]-vis0tot)*nut_func[i]/(filter_total)*(float)num*sqrt(1.)/weight2tot; // This is  S = (BdagB)^-1 Bdag V
+            F0[counter] = (flags0[i]-flags0tot)*nut_func[i]/filter_total*(float)num*sqrt(1.)/weight2tot;
+            S1[counter] = (vis1[i]-vis1tot)*nut_func[i]/(filter_total)*(float)num*sqrt(1.)/weight2tot; // This is S
+            F1[counter] = (flags1[i]-flags1tot)*nut_func[i]/filter_total*(float)num*sqrt(1.)/weight2tot;
  
 			counter++;
 		}
