@@ -57,7 +57,8 @@ RUN wget https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio-4.6.2.tar.g
 # provide source code files from the host
 ADD . /chips
 WORKDIR /chips
-RUN make install PAL_LIBS="-lstarlink_pal" PREFIX=/usr/local
+RUN make clean \
+    && make install PAL_LIBS="-lstarlink_pal" PREFIX=/usr/local
 
 # docker buildx build --platform=arm64,amd64 . -t d3vnull0/chips2024:latest --push
 # docker run -it --rm d3vnull0/chips2024:latest /bin/bash
