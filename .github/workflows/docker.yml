@@ -39,7 +39,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
+      - name: ${{ github.event_name == 'pull_request' && 'Build only (PR, no push)' || format('Build and push to {0}', env.IMAGE) }}
         uses: docker/build-push-action@v6
         with:
           context: .
