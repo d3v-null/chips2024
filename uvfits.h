@@ -105,6 +105,7 @@ typedef struct {
     int u;
     int v;
     int w;
+    int u2,v2,w2;   // optional second UU,VV,WW (pyuvdata residuals)
     int date;
     int date0;  // try to support the non-standard CASA double-date format where this is the base date
     int bl;

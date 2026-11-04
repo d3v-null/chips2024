@@ -196,7 +196,7 @@ int readUVFITSOpenInit(char *filename, uvdata **data, fitsfile **outfptr) {
 ******************************/
 int readUVFITSInitIterator(char *filename, uvdata **data, uvReadContext **iterator) {
     fitsfile *fptr=NULL;
-    int i,status=0,max_bl,grp_row_size,found_obsra=0;
+    int i,status=0,max_bl,grp_row_size,found_obsra=0,found_uvw[3]={0,0,0};
     char temp[84]="";
     uvReadContext *iter=NULL;
 
@@ -276,20 +276,31 @@ int readUVFITSInitIterator(char *filename, uvdata **data, uvReadContext **iterat
                 iter->ptype_map.date = i;
             }
         }
+        // pyuvdata writes UU,VV,WW twice: the float32 value then its float32 residual, to be summed.
+        // keep the first occurrence and remember where the residual is
         if (strncmp("UU",typedesc,2)==0) {
+          if (found_uvw[0]++) iter->ptype_map.u2 = i;
+          else {
             iter->pscal[0] = temp_pscal;
             iter->pzero[0] = temp_pzero;
             iter->ptype_map.u = i;
+          }
         }
         if (strncmp("VV",typedesc,2)==0) {
+          if (found_uvw[1]++) iter->ptype_map.v2 = i;
+          else {
             iter->pscal[1] = temp_pscal;
             iter->pzero[1] = temp_pzero;
             iter->ptype_map.v = i;
+          }
         }
         if (strncmp("WW",typedesc,2)==0) {
+          if (found_uvw[2]++) iter->ptype_map.w2 = i;
+          else {
             iter->pscal[2] = temp_pscal;
             iter->pzero[2] = temp_pzero;
             iter->ptype_map.w = i;
+          }
         }
         if (strncmp("BASELINE",typedesc,8)==0) {
             iter->ptype_map.bl = i;
@@ -416,6 +427,9 @@ void addGroupRow(uvdata *obj, uvReadContext *iter) {
     obj->u[time_index][j] = iter->grp_par[iter->ptype_map.u]*iter->pscal[0] + iter->pzero[0];
     obj->v[time_index][j] = iter->grp_par[iter->ptype_map.v]*iter->pscal[1] + iter->pzero[1];
     obj->w[time_index][j] = iter->grp_par[iter->ptype_map.w]*iter->pscal[2] + iter->pzero[2];
+    if (iter->ptype_map.u2 > 0) obj->u[time_index][j] += iter->grp_par[iter->ptype_map.u2]*iter->pscal[0];   // add optional residual UVW
+    if (iter->ptype_map.v2 > 0) obj->v[time_index][j] += iter->grp_par[iter->ptype_map.v2]*iter->pscal[1];
+    if (iter->ptype_map.w2 > 0) obj->w[time_index][j] += iter->grp_par[iter->ptype_map.w2]*iter->pscal[2];
 
     if (debug>1) fprintf(stdout,"Adding vis. (u,v,w): %g,%g,%g. Bl: %f. Time: %f. N_baselines: %d\n",
                 obj->u[time_index][j], obj->v[time_index][j], obj->w[time_index][j], obj->baseline[time_index][j],
