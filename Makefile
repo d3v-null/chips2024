@@ -47,9 +47,9 @@ ps_metrics: ps_power.c uvfits.c cspline.c
 		-o ps_metrics ps_power.c uvfits.c cspline.c \
 		$(CFITSIO_LIBS) $(BLAS_LIBS) ${COMMON_LIBS} $(PAL_LIBS)
 
-gridvisdiff: grid_vis_PB_chips.c uvfits.c primary_beamBNanalytic.c cspline.c
+gridvisdiff: grid_vis_PB_chips.c uvfits.c primary_beamBNanalytic.c cspline.c sky_realisation.c sky_realisation.h
 	$(CC) $(CFLAGS) $(INCS) $(CFITSIO_INCS) $(GSL_INCS) $(BLAS_INCS) $(LDFLAGS) \
-		-o gridvisdiff grid_vis_PB_chips.c uvfits.c primary_beamBNanalytic.c cspline.c \
+		-o gridvisdiff grid_vis_PB_chips.c uvfits.c primary_beamBNanalytic.c cspline.c sky_realisation.c \
 		$(CFITSIO_LIBS) $(GSL_LIBS) $(BLAS_LIBS) $(COMMON_LIBS) -pg $(PAL_LIBS)
 
 prepare_diff: prepare_cube_chips.c uvfits.c primary_beamDIFF.c cspline.c
@@ -73,9 +73,16 @@ lssa_fg_general: fft_krig_simple.c uvfits.c primary_beamDEV.c cspline.c
 		-o lssa_fg_general fft_krig_simple.c uvfits.c primary_beamDEV.c cspline.c \
 		$(CFITSIO_LIBS) $(GSL_LIBS) $(BLAS_LIBS) $(COMMON_LIBS) $(PAL_LIBS)
 
+# checks of the simulated sky used by gridvisdiff -S (no external libraries needed)
+test_sky: test_sky_realisation
+	./test_sky_realisation
+
+test_sky_realisation: test_sky_realisation.c sky_realisation.c sky_realisation.h
+	$(CC) $(CFLAGS) -o test_sky_realisation test_sky_realisation.c sky_realisation.c -lm
+
 install: all
 	mkdir -p $(PREFIX)/bin
 	mv $(TARGETS) $(PREFIX)/bin
 
 clean:
-	rm -f *.o $(TARGETS)
+	rm -f *.o $(TARGETS) test_sky_realisation

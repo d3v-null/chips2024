@@ -10,6 +10,7 @@
 #include <getopt.h>
 #include "uvfits.h"
 #include "primary_beam.h"
+#include "sky_realisation.h"
 #include "fitsio.h"
 #include <omp.h>
 
@@ -61,6 +62,10 @@ int field = FIELD;
 int debug=0;
 char *infilename=NULL;
 int ewflag=0;
+/* -S: replace the visibilities by a simulated random sky (see sky_realisation.h) */
+int sky_mode=0;
+unsigned long long global_sky_seed=0;
+double global_sky_sigma_m=SKY_SIGMA_M_DEFAULT;
 FILE *fpd;
 
 void usage() {
@@ -73,7 +78,7 @@ void usage() {
 
 void parse_cmdline(const int argc,char * const argv[]) {
     int result=0;
-    const char optstring[] = "i:e:p:c:f:n:d:u:";
+    const char optstring[] = "i:e:p:c:f:n:d:u:S:W:";
 
     while ( (result = getopt(argc, argv, optstring)) != -1 ) {
         switch (result) {
@@ -93,6 +98,11 @@ void parse_cmdline(const int argc,char * const argv[]) {
                 break;
             case 'd': debug = atoi(optarg);
             break;
+            case 'S': sky_mode = 1;
+                global_sky_seed = strtoull(optarg,NULL,10);
+                break;
+            case 'W': global_sky_sigma_m = atof(optarg);
+                break;
           default:
               fprintf(stderr,"unknown option: %c\n",result);
               usage(argv[0]);
@@ -157,6 +167,8 @@ if (argc < 2){
     fprintf(stderr,"\t -n bottom frequency (Hz)\n");
     fprintf(stderr,"\t -field fieldnum (0=EoR0, 1=EoR1, >2 anything)\n");
 	fprintf(stderr,"\t -u umax\n");
+    fprintf(stderr,"\t -S seed: grid a simulated random sky (the same for every observation gridded with this seed) in place of the data, keeping the sampling, weights and flags\n");
+    fprintf(stderr,"\t -W width (sigma, metres) of the aperture footprint of the simulated sky (default %g)\n",SKY_SIGMA_M_DEFAULT);
     exit(1);
 }
     
@@ -190,6 +202,10 @@ band = atoi(argv[4]);
     struct tm *tmptr = gmtime(&tim);
 
 fprintf(flog,"Processed with version %f of CHIPS on %s\n",VERSION,asctime(localtime(&tim)));
+if (sky_mode){
+    printf("Simulated sky mode: seed %llu, footprint sigma %g m. The data values are NOT gridded.\n",global_sky_seed,global_sky_sigma_m);
+    fprintf(flog,"Simulated sky mode: seed %llu, footprint sigma %g m. The data values are NOT gridded.\n",global_sky_seed,global_sky_sigma_m);
+}
 
 	umx = global_umax;
 
@@ -588,6 +604,20 @@ printf("WMAX %lg\n",WMAX);
                                                 //        printf("%f %f %f %f %f %f %f\n",uu,vv,vis_r1,vis_i1,vis_r2,vis_i2,data->weightdata[0][(iii*(data->n_pol*data->n_freq) + ch*data->n_pol + pol)]);
                                             
                                                 //if (sqrt(vis_r1*vis_r1+vis_i1*vis_i1) > 20000.) printf("i %duvw %f %f %f reals %lg %lg imag %lg %lg pol %d\n",i,uu,vv,ww,vis_r1,vis_r2,vis_i1,vis_i2,pol);
+                                            /* SIMULATED SKY: keep everything about this pair of visibilities (position, weight,
+                                               flags, kernel) and replace only their values by a random sky that is the same
+                                               for every observation. The sky is Hermitian, and the gridding below conjugates
+                                               a flipped visibility, so undo that here. */
+                                            if (sky_mode){
+                                                double sky_sigma = global_sky_sigma_m*frequency/SKY_VEL_LIGHT;
+                                                long sky_chan = lround(frequency/data->freq_delta);
+                                                double complex sky1 = chips_sky_vis(uu,vv,sky_chan,global_sky_seed,sky_sigma);
+                                                double complex sky2 = chips_sky_vis(uu2,vv2,sky_chan,global_sky_seed,sky_sigma);
+                                                vis_r1 = creal(sky1);
+                                                vis_i1 = flag ? -cimag(sky1) : cimag(sky1);
+                                                vis_r2 = creal(sky2);
+                                                vis_i2 = flag ? -cimag(sky2) : cimag(sky2);
+                                            }
                                             /************************* TESTING ***********************/
                                             
                                             
