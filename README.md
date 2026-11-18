@@ -63,3 +63,24 @@ Typical usage for an EoR high-band observation from MWA might be:
 ./lssa_fg_simple testdata 384 80 'yy' 300. testdata 0 1
 
 
+
+## Measuring the signal normalisation (`gridvisdiff -S`)
+
+Two visibilities see the same sky mode only if they are close in the uv-plane: for the MWA their sky signal is 50% correlated at a separation of about 1.75 wavelengths. The gridding kernel is 10 wavelengths wide, so a cell averages visibilities whose sky signal is only partly the same, and part of the sky power is lost. The more densely the uv-plane is filled (more baselines, more observations at different hour angles), the larger the loss. A fixed normalisation constant cannot follow this.
+
+`gridvisdiff -S <seed>` measures it. It grids the observation exactly as usual (same positions, weights, flags and kernel) but replaces the value of every visibility by a simulated random sky:
+
+- the sky is a field of unit-variance complex Gaussian numbers on a uv grid of 0.5 wavelengths, Hermitian, independent between channels;
+- a visibility is that field seen through a Gaussian aperture footprint (`-W`, sigma in metres, default 1.7, which gives the 1.75 wavelengths above for the MWA tile at 185 MHz);
+- the sky depends only on the seed, the channel frequency and (u,v), so every observation gridded with the same seed sees the same sky. w and the pointing of the primary beam are ignored.
+
+The outputs have the usual names and go through `prepare_diff`, `combine_data` and `lssa` unchanged, so use a separate extension. `sky_reference.py` then writes the grid that would result with no loss (the same variance in every cell that has data, same weights). The ratio of the two power spectra is the correction for the data that were gridded and combined the same way:
+
+    ./gridvisdiff file.uvfits 145000000 sky 1 -S 1
+    ./prepare_diff sky 384 0 'yy' sky 1
+    python3 sky_reference.py yy sky skyref 384
+    ./lssa_fg_simple sky 384 80 'yy' 300. sky 0 1
+    ./lssa_fg_simple skyref 384 80 'yy' 300. skyref 0 1
+    # correction(k) = crosspower(skyref) / crosspower(sky)
+
+Without `-S` the outputs of `gridvisdiff` are unchanged. `make test_sky` checks the simulated sky itself (variance, correlation against separation, Hermitian symmetry); `tests/` has a small synthetic uvfits generator and a check of the gridded simulated sky against direct evaluation.
